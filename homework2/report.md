@@ -341,89 +341,49 @@ P(x)=2x^3+5x+1
 #include <iostream>
 #include <algorithm>
 #include <cmath>
-#include <chrono>
-#include <iomanip>
-#include <vector>
 using namespace std;
-using namespace chrono;
 
 class Polynomial;
 
 class Term {
     friend class Polynomial;
-    friend ostream& operator<<(ostream& out, const Polynomial& poly);
+    friend ostream& operator<<(ostream& out, const Polynomial& poly); //讓輸出能讀取term coef exp
 
 private:
-    float coef;
-    int exp;
+    float coef;//係數
+    int exp;//指數
 };
 
 class Polynomial {
 private:
-    Term* termArray;
-    int capacity;
-    int terms;
+    Term* termArray; //多項式
+    int capacity; //罐子空間
+    int terms;//目前罐子用了多少
 
 public:
     Polynomial();
-    Polynomial(const Polynomial& other);
-    Polynomial& operator=(const Polynomial& other);
-    ~Polynomial();
 
     void NewTerm(const float thecoeff, const int theexp);
 
     Polynomial Add(Polynomial poly);
+
     Polynomial Mult(Polynomial poly);
+
     float Eval(float f);
 
     friend istream& operator>>(istream& in, Polynomial& poly);
+
     friend ostream& operator<<(ostream& out, const Polynomial& poly);
 };
 
-// 建構子
-Polynomial::Polynomial()
+Polynomial::Polynomial()//初始化罐子
 {
-    capacity = 1;
+    capacity = 1; //是0的話會乘不了
     terms = 0;
     termArray = new Term[capacity];
 }
 
-// 複製建構子
-Polynomial::Polynomial(const Polynomial& other)
-{
-    capacity = other.capacity;
-    terms = other.terms;
-    termArray = new Term[capacity];
-
-    copy(other.termArray, other.termArray + terms, termArray);
-}
-
-// 指定運算子
-Polynomial& Polynomial::operator=(const Polynomial& other)
-{
-    if (this != &other) {
-        Term* temp = new Term[other.capacity];
-
-        copy(other.termArray, other.termArray + other.terms, temp);
-
-        delete[] termArray;
-
-        termArray = temp;
-        capacity = other.capacity;
-        terms = other.terms;
-    }
-
-    return *this;
-}
-
-// 解構子
-Polynomial::~Polynomial()
-{
-    delete[] termArray;
-}
-
-// 新增項目
-void Polynomial::NewTerm(const float thecoeff, const int theexp)
+void Polynomial::NewTerm(const float thecoeff, const int theexp) //考試有教的
 {
     if (terms == capacity) {
         capacity *= 2;
@@ -441,45 +401,45 @@ void Polynomial::NewTerm(const float thecoeff, const int theexp)
 }
 
 // 多項式相加
-Polynomial Polynomial::Add(Polynomial poly)
+Polynomial Polynomial::Add(Polynomial poly) 
 {
-    Polynomial c;
+    Polynomial c; //建立物件c 初始化成員 上面有的初始化罐子 ex c.terms=0
 
-    int i = 0;
+    int i = 0;//拿來跑while的
     int j = 0;
 
-    while (i < terms && j < poly.terms) {
-        if (termArray[i].exp == poly.termArray[j].exp) {
-            float sum = termArray[i].coef + poly.termArray[j].coef;
+    while (i < terms && j < poly.terms) { //i跟j跑到罐子內目前存多少ex 5x^2+2x terms=2
 
-            if (sum != 0) {
+        if (termArray[i].exp == poly.termArray[j].exp) { //判斷兩個指數是否相同
+            float sum = termArray[i].coef + poly.termArray[j].coef; //是的話就相加
+
+            if (sum != 0) {  //相加不為0就把結果丟罐子
                 c.NewTerm(sum, termArray[i].exp);
             }
-
             i++;
-            j++;
+            j++;//下一格
         }
-        else if (termArray[i].exp > poly.termArray[j].exp) {
-            c.NewTerm(termArray[i].coef, termArray[i].exp);
-            i++;
+        else if (termArray[i].exp > poly.termArray[j].exp) { //如果當前I的指數大於J
+            c.NewTerm(termArray[i].coef, termArray[i].exp);//直接丟到罐子
+            i++; //下一格
         }
         else {
-            c.NewTerm(poly.termArray[j].coef, poly.termArray[j].exp);
+            c.NewTerm(poly.termArray[j].coef, poly.termArray[j].exp); //同上
             j++;
         }
     }
 
-    while (i < terms) {
+    while (i < terms) {//如果J處理結束 I繼續跑
         c.NewTerm(termArray[i].coef, termArray[i].exp);
         i++;
     }
 
-    while (j < poly.terms) {
+    while (j < poly.terms) { //同上
         c.NewTerm(poly.termArray[j].coef, poly.termArray[j].exp);
         j++;
     }
 
-    return c;
+    return c; //回傳結果
 }
 
 // 多項式相乘
@@ -488,21 +448,25 @@ Polynomial Polynomial::Mult(Polynomial poly)
     Polynomial c;
 
     for (int i = 0; i < terms; i++) {
-        for (int j = 0; j < poly.terms; j++) {
-            float sumC = termArray[i].coef * poly.termArray[j].coef;
-            int sumE = termArray[i].exp + poly.termArray[j].exp;
+        for (int j = 0; j < poly.terms; j++) { //每個都要相乘
 
-            bool found = false;
+            float sumC = termArray[i].coef * poly.termArray[j].coef; //係數相乘
+
+            int sumE = termArray[i].exp + poly.termArray[j].exp; //指數是相加
+
+            bool found = false; //預設沒找到相同的
 
             for (int k = 0; k < c.terms; k++) {
-                if (c.termArray[k].exp == sumE) {
-                    c.termArray[k].coef += sumC;
+                if (c.termArray[k].exp == sumE) {  //判斷c裡面的指數是否相同
+
+                    c.termArray[k].coef += sumC; //指數相同則同項相加
+
                     found = true;
                     break;
                 }
             }
 
-            if (!found) {
+            if (found == false) { //沒有就額外新增
                 c.NewTerm(sumC, sumE);
             }
         }
@@ -511,153 +475,63 @@ Polynomial Polynomial::Mult(Polynomial poly)
     return c;
 }
 
-// 多項式代入計算
+// 計算多項式的值
 float Polynomial::Eval(float f)
 {
-    float sum = 0;
-
+    float sum=0;
     for (int i = 0; i < terms; i++) {
-        sum += termArray[i].coef * pow(f, termArray[i].exp);
+        sum += termArray[i].coef*pow(f, termArray[i].exp); //就相乘
     }
-
     return sum;
 }
 
 // 多項式輸入
-istream& operator>>(istream& in, Polynomial& poly)
+istream& operator>>(istream& in, Polynomial& poly) //istream&是宣告函式格式 Polynomial& poly是把讀進來的資料存入
 {
     int n;
-    in >> n;
-
+    in >> n; //in代表傳入函式的cin 這個函式被呼叫時所輸入的會進到in
     float coef;
     int exp;
 
     for (int i = 0; i < n; i++) {
-        in >> coef >> exp;
-        poly.NewTerm(coef, exp);
+        in >> coef >> exp; //給值
+        poly.NewTerm(coef, exp); //存入
     }
-
-    return in;
+    return in; //回傳 不然跑不動
 }
 
 // 多項式輸出
 ostream& operator<<(ostream& out, const Polynomial& poly)
 {
-    if (poly.terms == 0) {
-        out << '0';
-        return out;
-    }
-
     for (int i = 0; i < poly.terms; i++) {
-        float coef = poly.termArray[i].coef;
-        int exp = poly.termArray[i].exp;
 
-        if (i > 0 && coef > 0) {
+        // 處理正負號
+        if (i > 0 && poly.termArray[i].coef > 0) {
             out << '+';
         }
-
-        out << coef;
-
-        if (exp > 0) {
+        // 輸出係數
+        out << poly.termArray[i].coef;
+        // 大於 0 才輸出 x
+        if (poly.termArray[i].exp > 0) {
             out << 'x';
         }
-
-        if (exp > 1) {
-            out << '^' << exp;
+        // 大於 1 才輸出 ^指數
+        if (poly.termArray[i].exp > 1) {
+            out << '^' << poly.termArray[i].exp;
         }
     }
 
     return out;
 }
 
-// 建立測試用多項式
-Polynomial MakePolynomial(int n, int multiplier)
-{
-    Polynomial p;
-
-    for (int i = 0; i < n; i++) {
-        // 指數由大到小排列，符合 Add() 的輸入假設。
-        // 使用不同倍率，讓乘法測試能產生較多不同指數。
-        p.NewTerm(static_cast<float>(i + 1), (n - i) * multiplier);
-    }
-
-    return p;
-}
-
-// 效能量測
-void MeasurePerformance()
-{
-    cout << "\n========== 效能量測 ==========\n";
-    cout << "時間單位：微秒 (us)\n\n";
-
-    cout << left
-         << setw(12) << "項數"
-         << setw(20) << "Add 平均時間(us)"
-         << setw(20) << "Mult 平均時間(us)"
-         << '\n';
-
-    const int repeat = 5;
-    const int sizes[] = {10, 20, 30, 40};
-
-    for (int n : sizes) {
-        Polynomial a = MakePolynomial(n, 1000);
-        Polynomial b = MakePolynomial(n, 1);
-
-        double addTotal = 0;
-        double multTotal = 0;
-
-        // 量測相加
-        for (int r = 0; r < repeat; r++) {
-            auto start = steady_clock::now();
-
-            Polynomial result = a.Add(b);
-
-            auto end = steady_clock::now();
-
-            addTotal += duration<double, micro>(end - start).count();
-
-            // 使用結果，避免測試結果完全不被使用。
-            if (result.Eval(1.0f) == -1.0f) {
-                cout << "";
-            }
-        }
-
-        // 量測相乘
-        for (int r = 0; r < repeat; r++) {
-            auto start = steady_clock::now();
-
-            Polynomial result = a.Mult(b);
-
-            auto end = steady_clock::now();
-
-            multTotal += duration<double, micro>(end - start).count();
-
-            if (result.Eval(1.0f) == -1.0f) {
-                cout << "";
-            }
-        }
-
-        cout << left
-             << setw(12) << n
-             << setw(20) << fixed << setprecision(2)
-             << addTotal / repeat
-             << setw(20)
-             << multTotal / repeat
-             << '\n';
-    }
-
-    cout << "\n每種項數各執行 " << repeat
-         << " 次，表格列出平均執行時間。\n";
-}
-
 int main()
 {
     Polynomial p1, p2, result;
 
-    cout << "請輸入第一個多項式的項數、係數與指數：\n";
+    cout << "請輸入第一個多項式的項數、係數與指數：";
     cin >> p1;
 
-    cout << "請輸入第二個多項式的項數、係數與指數：\n";
+    cout << "請輸入第二個多項式的項數、係數與指數：";
     cin >> p2;
 
     cout << "第一個多項式：" << p1 << '\n';
@@ -670,13 +544,10 @@ int main()
     cout << "相乘結果：" << result << '\n';
 
     float x;
-
     cout << "請輸入要代入的 x：";
     cin >> x;
 
     cout << "第一個多項式的計算結果：" << p1.Eval(x) << '\n';
-
-    MeasurePerformance();
 
     return 0;
 }
