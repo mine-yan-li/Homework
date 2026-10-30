@@ -3,12 +3,12 @@
 #include <cmath>
 using namespace std;
 
-class Polynomial;
+class Polynomial;//類別
 
 class Term {
-    friend class Polynomial;
+    friend class Polynomial;// 讓 Polynomial 可以存取 Term 的 private 成員
     friend ostream& operator<<(ostream& out, const Polynomial& poly); //讓輸出能讀取term coef exp
-
+    friend istream& operator>>(istream& in, Polynomial& poly);
 private:
     float coef;//係數
     int exp;//指數
@@ -16,7 +16,7 @@ private:
 
 class Polynomial {
 private:
-    Term* termArray; //多項式
+    Term* termArray; //多項式 存係數指數
     int capacity; //罐子空間
     int terms;//目前罐子用了多少
 
@@ -31,16 +31,16 @@ public:
 
     float Eval(float f);
 
-    friend istream& operator>>(istream& in, Polynomial& poly);
+    friend istream& operator>>(istream& in, Polynomial& poly);// 讓 cin >> p 可以讀取多項式
 
-    friend ostream& operator<<(ostream& out, const Polynomial& poly);
+    friend ostream& operator<<(ostream& out, const Polynomial& poly);// 讓 cout << p 可以輸出多項式
 };
 
 Polynomial::Polynomial()//初始化罐子
 {
     capacity = 1; //是0的話會乘不了
     terms = 0;
-    termArray = new Term[capacity];
+    termArray = new Term[capacity];//動態記憶體
 }
 
 void Polynomial::NewTerm(const float thecoeff, const int theexp) //考試有教的
@@ -48,27 +48,28 @@ void Polynomial::NewTerm(const float thecoeff, const int theexp) //考試有教�
     if (terms == capacity) {
         capacity *= 2;
 
-        Term* temp = new Term[capacity];
+        Term* temp = new Term[capacity]; // 建立一個容量更大的罐子
 
-        copy(termArray, termArray + terms, temp);
+        copy(termArray, termArray + terms, temp);//把舊資料丟進新罐子
 
-        delete[] termArray;
-        termArray = temp;
+        delete[] termArray; //刪除舊罐子
+        termArray = temp;//指向新罐子
     }
 
-    termArray[terms].coef = thecoeff;
-    termArray[terms++].exp = theexp;
+    termArray[terms].coef = thecoeff;// 將新係數存入目前空位置
+    termArray[terms++].exp = theexp;//指數存入 讓項數加1
+
 }
 
 // 多項式相加
-Polynomial Polynomial::Add(Polynomial poly) 
+Polynomial Polynomial::Add(Polynomial poly) //poly是第二個多項式
 {
     Polynomial c; //建立物件c 初始化成員 上面有的初始化罐子 ex c.terms=0
 
     int i = 0;//拿來跑while的
     int j = 0;
 
-    while (i < terms && j < poly.terms) { //i跟j跑到罐子內目前存多少ex 5x^2+2x terms=2
+    while (i < terms && j < poly.terms) { //i跟j跑到罐子內目前存多少ex 5x^2+2x terms=2 
 
         if (termArray[i].exp == poly.termArray[j].exp) { //判斷兩個指數是否相同
             float sum = termArray[i].coef + poly.termArray[j].coef; //是的話就相加
@@ -138,44 +139,55 @@ Polynomial Polynomial::Mult(Polynomial poly)
 // 計算多項式的值
 float Polynomial::Eval(float f)
 {
-    float sum=0;
+    float sum = 0;
     for (int i = 0; i < terms; i++) {
-        sum += termArray[i].coef*pow(f, termArray[i].exp); //就相乘
+        sum += termArray[i].coef * pow(f, termArray[i].exp); //就相乘  ex 5x^2 x=2 4*5=20
     }
     return sum;
 }
 
 // 多項式輸入
-istream& operator>>(istream& in, Polynomial& poly) //istream&是宣告函式格式 Polynomial& poly是把讀進來的資料存入
+istream& operator>>(istream& in, Polynomial& poly)
 {
     int n;
-    in >> n; //in代表傳入函式的cin 這個函式被呼叫時所輸入的會進到in
+    in >> n;
+
     float coef;
     int exp;
 
     for (int i = 0; i < n; i++) {
-        in >> coef >> exp; //給值
-        poly.NewTerm(coef, exp); //存入
+        in >> coef >> exp; // 輸入係數與指數
+
+        if (exp < 0) {
+            cout << "指數不能是負數，程式結束！" << endl;
+            exit(1);
+        }
+
+        poly.NewTerm(coef, exp); // 指數合法才存入
     }
-    return in; //回傳 不然跑不動
+
+    return in;
 }
 
-// 多項式輸出
 ostream& operator<<(ostream& out, const Polynomial& poly)
 {
+    if (poly.terms == 0) {
+        out << '0';
+        return out;
+    }
+
     for (int i = 0; i < poly.terms; i++) {
 
-        // 處理正負號
         if (i > 0 && poly.termArray[i].coef > 0) {
             out << '+';
         }
-        // 輸出係數
+
         out << poly.termArray[i].coef;
-        // 大於 0 才輸出 x
+
         if (poly.termArray[i].exp > 0) {
             out << 'x';
         }
-        // 大於 1 才輸出 ^指數
+
         if (poly.termArray[i].exp > 1) {
             out << '^' << poly.termArray[i].exp;
         }
@@ -184,9 +196,12 @@ ostream& operator<<(ostream& out, const Polynomial& poly)
     return out;
 }
 
+
 int main()
 {
     Polynomial p1, p2, result;
+
+    cout << "請由大到小輸入指數!\n";
 
     cout << "請輸入第一個多項式的項數、係數與指數：";
     cin >> p1;
@@ -208,6 +223,7 @@ int main()
     cin >> x;
 
     cout << "第一個多項式的計算結果：" << p1.Eval(x) << '\n';
+    cout << "第一個多項式的計算結果：" << p2.Eval(x) << '\n';
 
     return 0;
 }
